@@ -1,17 +1,12 @@
-name: Estimate AWS Cost
+name: Update Resource List
 
 on:
   push:
     branches: [main]
 
 jobs:
-  estimate_cost:
+  update_readme:
     runs-on: ubuntu-latest
-
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: sa-east-1
 
     steps:
       - name: Checkout repository
@@ -20,7 +15,7 @@ jobs:
       - name: Parse template.yml
         run: |
           pip install pyyaml
-          echo "
+          python - <<EOF
           import yaml
 
           with open('template.yml', 'r') as file:
@@ -29,15 +24,17 @@ jobs:
           resources = template.get('Resources', {})
           resource_names = list(resources.keys())
 
-          with open('resource_names.txt', 'w') as file:
-              file.write('\n'.join(resource_names))
-          " > script.py
+          with open('README.md', 'a') as file:
+              file.write('### AWS Resources\n\n')
+              file.write('The following AWS resources are defined in the CloudFormation template:\n\n')
+              for resource in resource_names:
+                  file.write(f'- {resource}\n')
+          EOF
 
-      - name: Estimate AWS cost
+      - name: Commit changes
         run: |
-          python script.py
-          resource_names=$(cat resource_names.txt)
-          for resource in $resource_names; do
-            cost=$(aws ce get-cost-and-usage --time-period Start=$(date -u '+%Y-%m-01'),End=$(date -u '+%Y-%m-%d') --granularity MONTHLY --metrics BlendedCost --filter "Dimensions=SERVICE,${resource}")
-            echo "Estimated cost for ${resource}: ${cost}"
-          done
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "Update resource list"
+          git push
