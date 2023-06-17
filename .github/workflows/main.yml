@@ -12,14 +12,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Install ruamel.yaml
+        run: pip install ruamel.yaml
+
       - name: Parse template.yml
         run: |
-          pip install pyyaml
           python - <<EOF
-          import yaml
+          import ruamel.yaml
 
-          with open('template.yml', 'r') as file:
-              template = yaml.safe_load(file)
+          with open('owner/repo-teste/infra/template.yml', 'r') as file:
+              template = ruamel.yaml.YAML().load(file)
 
           resources = template.get('Resources', {})
           resource_names = list(resources.keys())
