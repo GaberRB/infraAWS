@@ -1,8 +1,9 @@
-name: Create Resource Issue
+name: Create Issue with AWS Resources
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   create_issue:
@@ -12,46 +13,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install ruamel.yaml
-        run: pip install ruamel.yaml
-
-      - name: Parse template.yml
+      - name: Read AWS resources from template.yml
+        id: get_resources
         run: |
-          python - <<EOF
-          import ruamel.yaml
-          import os
-          import requests
-          import json
+          resources=$(grep -oP '(?<=^  )\S+' template.yml)
+          echo "::set-output name=resources::$resources"
 
-          with open('template.yml', 'r') as file:
-              template = ruamel.yaml.YAML().load(file)
+      - name: Create Issue
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = 'AWS Resources in template.yml';
+            const resources = '${{ steps.get_resources.outputs.resources }}';
+            const body = `
+              The following AWS resources are defined in the CloudFormation template:
 
-          resources = template.get('Resources', {})
-          resource_names = list(resources.keys())
+              ${resources}
+            `;
 
-          issue_title = 'AWS Resources in CloudFormation Template'
-          issue_body = 'The following AWS resources are defined in the CloudFormation template:\n\n'
-          for resource in resource_names:
-              issue_body += f'- {resource}\n'
-
-          headers = {
-              'Authorization': f'token ${{ secrets.GITHUB_TOKEN }}',
-              'Accept': 'application/vnd.github.v3+json'
-          }
-
-          data = {
-              'title': issue_title,
-              'body': issue_body
-          }
-
-          response = requests.post(
-              f'https://api.github.com/repos/{os.environ["GITHUB_REPOSITORY"]}/issues',
-              headers=headers,
-              data=json.dumps(data)
-          )
-
-          if response.status_code == 201:
-              print('Issue created successfully.')
-          else:
-              print(f'Failed to create issue. Status code: {response.status_code}, Error: {response.text}')
-          EOF
+            const { data } = await github.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body
+            });
+            console.log(`Issue created successfully: ${data.html_url}`);
