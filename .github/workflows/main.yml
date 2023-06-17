@@ -23,7 +23,7 @@ jobs:
           echo "
           import yaml
 
-          with open('GaberRB/infraAWS/template.yml', 'r') as file:
+          with open('template.yml', 'r') as file:
               template = yaml.safe_load(file)
 
           resources = template.get('Resources', {})
