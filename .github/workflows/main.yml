@@ -35,8 +35,8 @@ jobs:
 
       - name: Commit changes
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "grios0311@gmail.com"
+          git config --local user.name "GaberRB"
           git add README.md
           git commit -m "Update resource list"
           git push
