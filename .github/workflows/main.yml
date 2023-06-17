@@ -20,7 +20,7 @@ jobs:
           python - <<EOF
           import ruamel.yaml
 
-          with open('owner/repo-teste/infra/template.yml', 'r') as file:
+          with open('template.yml', 'r') as file:
               template = ruamel.yaml.YAML().load(file)
 
           resources = template.get('Resources', {})
