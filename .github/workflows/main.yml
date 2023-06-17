@@ -1,0 +1,43 @@
+name: Estimate AWS Cost
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  estimate_cost:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: sa-east-1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Parse template.yml
+        run: |
+          pip install pyyaml
+          echo "
+          import yaml
+
+          with open('GaberRB/infraAWS/template.yml', 'r') as file:
+              template = yaml.safe_load(file)
+
+          resources = template.get('Resources', {})
+          resource_names = list(resources.keys())
+
+          with open('resource_names.txt', 'w') as file:
+              file.write('\n'.join(resource_names))
+          " > script.py
+
+      - name: Estimate AWS cost
+        run: |
+          python script.py
+          resource_names=$(cat resource_names.txt)
+          for resource in $resource_names; do
+            cost=$(aws ce get-cost-and-usage --time-period Start=$(date -u '+%Y-%m-01'),End=$(date -u '+%Y-%m-%d') --granularity MONTHLY --metrics BlendedCost --filter "Dimensions=SERVICE,${resource}")
+            echo "Estimated cost for ${resource}: ${cost}"
+          done
