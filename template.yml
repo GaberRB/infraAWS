@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Template description"
+
+Parameters:
+  AppEnvironment:
+    Type: String
+    Default: production
+  EC2InstanceType: 
+    Type: String
+    Default: a1.medium
+  AccountVpc:
+    Type: AWS::EC2::VPC::Id
+    Description: Account VPC
+    Default: vpc-id
+  EC2Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet subnet-1
+    Default: subnet-1-id
+  LoadBalancerSubnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet subnet-1
+    Default: subnet-1-id
+  LoadBalancerVisibility:
+    Type: String
+    Default: public
+
+Resources:
+  CloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ["ec2.amazonaws.com"]
+            Action: ["sts:AssumeRole"]
+      Policies:
+        - PolicyName: AppLogsPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:GetLogEvents",
+                    "logs:PutLogEvents",
+                    "logs:DescribeLogGroups",
+                    "logs:DescribeLogStreams",
+                    "logs:FilterLogEvents",
+                    "logs:PutRetentionPolicy"
+                  ]
+                Resource: "*"
+
+  InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      InstanceProfileName: !Sub ${App}-${AppEnvironment}-CloudWatch
+      Roles:
+        - !Ref CloudWatchLogsRole
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/elasticbeanstalk/${App}-${AppEnvironment}/var/log/eb-docker/containers/eb-current-app/stdouterr.log
+      RetentionInDays: 7
+
+  App:
+    Type: "AWS::ElasticBeanstalk::Application"
+    Properties:
+      ApplicationName: app-name
+      Description: Application description
+  
+  AppVersion:
+    Type: "AWS::ElasticBeanstalk::ApplicationVersion"
+    Properties:
+      ApplicationName: !Ref App
+      Description: String
+      SourceBundle:
+        S3Bucket: s3-bucket-name
+        S3Key: s3-key-name.zip
+
+  AppEnvironment:
+    Type: "AWS::ElasticBeanstalk::Environment"
+    Properties:
+      EnvironmentName: !Sub ${App}-${AppEnvironment}
+      ApplicationName: !Ref App
+      SolutionStackName: "64bit Amazon Linux 2018.03 v2.15.1 running Docker 19.03.6-ce"
+      Tier:
+        Name: WebServer
+        Type: Standard
+        Version: "1.0"
+      VersionLabel: !Ref AppVersion
+      OptionSettings: 
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: APP_ENV
+          Value: !Ref AppEnvironment
+        - Namespace: aws:elasticbeanstalk:command
+          OptionName: DeploymentPolicy
+          Value: RollingWithAdditionalBatch
+        - Namespace: aws:elasticbeanstalk:command
+          OptionName: BatchSizeType
+          Value: Fixed
+        - Namespace: aws:elasticbeanstalk:command
+          OptionName: BatchSize
+          Value: 1
+        - Namespace: aws:ec2:vpc
+          OptionName: VPCId
+          Value: !Ref AccountVpc
+        - Namespace: aws:ec2:vpc
+          OptionName: Subnets
+          Value: !Ref EC2Subnet
+        - Namespace: "aws:autoscaling:launchconfiguration"
+          OptionName: InstanceType
+          Value: !Ref EC2InstanceType
+        - Namespace: aws:elasticbeanstalk:environment
+          OptionName: EnvironmentType
+          Value: LoadBalanced
+        - Namespace: "aws:elasticbeanstalk:environment"
+          OptionName: LoadBalancerType
+          Value: network
+        - Namespace: "aws:ec2:vpc"
+          OptionName: ELBSubnets
+          Value: !Ref LoadBalancerSubnet
+        - Namespace: "aws:ec2:vpc"
+          OptionName: ELBScheme
+          Value: !Sub ${LoadBalancerVisibility}
+        - Namespace: "aws:autoscaling:launchconfiguration"
+          OptionName: IamInstanceProfile
+          Value: !Ref InstanceProfile
+        - Namespace: aws:elasticbeanstalk:cloudwatch:logs
+          OptionName: StreamLogs
+          Value: true
