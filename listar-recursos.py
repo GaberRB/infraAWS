@@ -7,7 +7,7 @@ template_path = os.path.join(os.getcwd(), '/infra/template.yml')
 with open(template_path, 'r') as file:
     template = file.read()
 
-def sub_variavel(match)
+def sub_variavel(match):
     value = match.group(1)
     return 'value'
 
