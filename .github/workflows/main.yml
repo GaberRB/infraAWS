@@ -1,9 +1,7 @@
 name: Create Issue with AWS Resources
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch: null
 
 jobs:
   create_issue:
@@ -11,25 +9,29 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Read AWS resources from template.yml
-        id: get_resources
+      - name: Setup Python
+        run: actions/setup-python@v3.1.4
+
+      - name: Instalar dependencias
+        run: pip install ruamel.yaml
+
+      - name: Executar listar-recursos.py
+        run: python listar-recursos.py
+
+      - name: Recupera o arquivo resources.txt
+        id: read-resources
+        run: echo "::set-output name=resources::$(cat resources.txt)"  
+           
+      - name: Create issue using REST API
         run: |
-          resources=$(grep -oP '(?<=^  )\S+' template.yml)
-          echo "::set-output name=resources::$resources"
-
-      - name: Create Issue
-        uses: actions/github-script@v4
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const title = 'AWS Resources in template.yml';
-            const resources = '${{ steps.get_resources.outputs.resources }}';
-            const body = `
-              The following AWS resources are defined in the CloudFormation template:
-
-              ${resources}
-            `;
-
-            console.log("${resources}")
+          curl --request POST \
+          --url https://api.github.com/repos/${{ github.repository }}/issues \
+          --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+          --header 'content-type: application/json' \
+          --data '{
+            "title": "Lista os recursos de infra",
+            "body": "**${{ github.workflow }}**\n\nRecursos:\n\n${{ steps.read-resources.outputs.resources }}"
+            }' \
+          --fail
