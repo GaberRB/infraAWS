@@ -26,16 +26,38 @@ jobs:
 
       - name: Recupera o arquivo resources.txt
         id: read-resources
-        run: echo "::set-output name=resources::$(cat resources.txt)"  
+        run: echo "::set-output name=resources::$(cat resources.txt)" 
+        
+      - name: Cria Issue
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: >
+              const fs = require('fs');
+              const resources = fs.readFileSync('resources.txt', 'utf8').trim().split('\n');
+              const body `
+                Lista recursos de Infra
+
+                ${resources.join('\n')}
+              `
+
+              const {data} = await.github.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Lista recursos de infra'
+                body
+              });
+
+              console.log(`Issue criada com sucesso : ${data.html_url}`);
            
-      - name: Create issue using REST API
-        run: |
-          curl --request POST \
-          --url https://api.github.com/repos/${{ github.repository }}/issues \
-          --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
-          --header 'content-type: application/json' \
-          --data '{
-            "title": "Lista os recursos de infra",
-            "body": "**${{ github.workflow }}**\n\nRecursos:\n\n${{ steps.read-resources.outputs.resources }}"
-            }' \
-          --fail
+      # - name: Create issue using REST API
+      #   run: |
+      #     curl --request POST \
+      #     --url https://api.github.com/repos/${{ github.repository }}/issues \
+      #     --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+      #     --header 'content-type: application/json' \
+      #     --data '{
+      #       "title": "Lista os recursos de infra",
+      #       "body": "**${{ github.workflow }}**\n\nRecursos:\n\n${{ steps.read-resources.outputs.resources }}"
+      #       }' \
+      #     --fail
