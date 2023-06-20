@@ -53,26 +53,22 @@ Resources:
                     "logs:PutRetentionPolicy"
                   ]
                 Resource: "*"
-
   InstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties:
       InstanceProfileName: !Sub ${App}-${AppEnvironment}-CloudWatch
       Roles:
         - !Ref CloudWatchLogsRole
-
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/elasticbeanstalk/${App}-${AppEnvironment}/var/log/eb-docker/containers/eb-current-app/stdouterr.log
       RetentionInDays: 7
-
   App:
     Type: "AWS::ElasticBeanstalk::Application"
     Properties:
       ApplicationName: app-name
       Description: Application description
-  
   AppVersion:
     Type: "AWS::ElasticBeanstalk::ApplicationVersion"
     Properties:
@@ -81,7 +77,6 @@ Resources:
       SourceBundle:
         S3Bucket: s3-bucket-name
         S3Key: s3-key-name.zip
-
   AppEnvironment:
     Type: "AWS::ElasticBeanstalk::Environment"
     Properties:
