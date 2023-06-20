@@ -2,7 +2,7 @@ import ruamel.yaml
 import re
 import os
 
-template_path = os.path.join(os.getcwd(), '/infra/template.yml')
+template_path =  '/infra/template.yml'
 
 with open(template_path, 'r') as file:
     template = file.read()
