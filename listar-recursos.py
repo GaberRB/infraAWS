@@ -2,7 +2,8 @@ import ruamel.yaml
 import re
 import os
 
-template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "infra", "template.yml"))
+template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "infraAWS", "infra", "template.yml"))
+
 
 with open(template_path, 'r') as file:
     template = file.read()
@@ -27,5 +28,5 @@ parsed_template = yaml.load(replace_variavel(template))
 resources = parsed_template.get('Resources', {})
 resources_types = [resource['Type'].split('AWS::')[1].strip().split(':')[0].strip() for resource in resources.values()]
 
-with open('resorces.txt', 'w') as file:
+with open('resources.txt', 'w') as file:
     file.write('\n'.join(resources_types))
