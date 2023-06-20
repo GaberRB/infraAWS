@@ -32,10 +32,12 @@ jobs:
               ${resources}
             `;
 
-            const { data } = await github.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title,
-              body
-            });
-            console.log(`Issue created successfully: ${data.html_url}`);
+            console.log("${resources}")
+
+            # const { data } = await github.issues.create({
+            #   owner: context.repo.owner,
+            #   repo: context.repo.repo,
+            #   title,
+            #   body
+            # });
+            # console.log(`Issue created successfully: ${data.html_url}`);
