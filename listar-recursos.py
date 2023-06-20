@@ -12,7 +12,7 @@ def sub_variavel(match):
     value = match.group(1)
     return 'value'
 
-pattern = r'\$\{([^]+)\}'
+pattern = r'\$\{([^}]+)\}'
 
 def replace_variavel(template):
     while True:
