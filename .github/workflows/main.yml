@@ -32,24 +32,28 @@ jobs:
         uses: actions/github-script@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: >
-              const fs = require('fs');
-              const resources = fs.readFileSync('resources.txt', 'utf8').trim().split('\n');
-              const body = `
-                Lista recursos de Infra
-
-                ${resources.join('\n')}
-              `
-
-              const {data} = await.github.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: 'Lista recursos de infra'
-                body
-              });
-
-              console.log(`Issue criada com sucesso : ${data.html_url}`);
-           
+          script: |
+            const fs = require('fs');
+            const resources = fs.readFileSync('resources.txt', 'utf8').trim().split('\n');
+            const body = `
+              Lista recursos de Infra
+            
+              ${resources.join('\n')}
+            `;
+            
+            const { data } = await github.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Lista recursos de infra',
+              body: body
+            });
+            
+            console.log(`Issue criada com sucesso: ${data.html_url}`);
+        
+          debug: false
+          user-agent: actions/github-script
+          result-encoding: json
+            
       # - name: Create issue using REST API
       #   run: |
       #     curl --request POST \
