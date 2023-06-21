@@ -1,5 +1,6 @@
 import ruamel.yaml
 import json
+import os
 
 template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "infraAWS", "infra", "template.yml"))
 output_file = "resource_info.json"
