@@ -4,27 +4,38 @@ import json
 
 def get_service_code(service_name):
 
-    return  'Amazon' + service_name
+    return 'Amazon' + service_name
 
 
 def get_estimated_cost(resource):
     pricing_client = boto3.client('pricing', region_name='us-east-1')
-    service_code = get_service_code(resource)
 
+    resource_type = resource.get('ResourceType')
+    service_code = get_service_code(resource_type.split('AWS::')[1].strip().split(':')[0].strip())
     if not service_code:
         return None
-    print(service_code)
-    response = pricing_client.get_products(
-        ServiceCode=service_code,
-        Filters=[
-            {
-                'Type': 'TERM_MATCH',
-                'Field': 'location',
-                'Value': 'US East (N. Virginia)'
-            }
-        ],
-        MaxResults=100
-    )
+    if resource_type.startswith("AWS::EC2"):
+        instance_type = resource.get("InstanceType")
+        FLT = '[{{"Field": "instanceType", "Value": "{t}", "Type": "TERM_MATCH"}},' \
+              '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}}]'
+
+        f = FLT.format(t=instance_type, r='US East (N. Virginia)')
+        response = pricing_client.get_products(ServiceCode=service_code, Filters=json.loads(f))
+    elif resource_type.startswith("AWS::RDS"):
+        service_code = get_service_code(resource_type.split('AWS::')[1].strip().split(':')[0].strip())
+        db_instance_class = resource.get("DBInstanceClass")
+        FLT = '[{{"Field": "instanceType", "Value": "{t}", "Type": "TERM_MATCH"}},' \
+              '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}}]'
+
+        f = FLT.format(t=db_instance_class, r='US East (N. Virginia)')
+        response = pricing_client.get_products(ServiceCode=service_code, Filters=json.loads(f))
+    else:
+        service_code = get_service_code(resource_type.split('AWS::')[1].strip().split(':')[0].strip())
+        FLT = '[{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}}]'
+
+        f = FLT.format(r='US East (N. Virginia)')
+        response = pricing_client.get_products(ServiceCode=service_code, Filters=json.loads(f))
+
 
     if 'PriceList' in response:
         try:
@@ -46,12 +57,16 @@ def get_estimated_cost(resource):
 
     return None
 
-with open('resources.txt', 'r') as file:
-    resources = file.read().splitlines()
+
+def load_resource_info():
+    with open("resource_info.json", "r") as file:
+        resource_info = json.load(file)
+    return resource_info
+
 
 total = 0
 
-for resource in resources:
+for resource in load_resource_info():
     estimated_cost = get_estimated_cost(resource)
     total = total + float(estimated_cost)
     with open('resources_cost.txt', 'a') as file:
@@ -59,4 +74,5 @@ for resource in resources:
 
 with open('resources_cost.txt', 'a') as file:
     file.write(f'\nTotal: {str(total)} P/dia')
+
 
