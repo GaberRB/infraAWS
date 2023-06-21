@@ -12,6 +12,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
       - name: Setup Python
         uses: actions/setup-python@v3
@@ -21,12 +30,16 @@ jobs:
       - name: Instalar dependencias
         run: pip install ruamel.yaml
 
+        
       - name: Executar listar-recursos.py
         run: python listar-recursos.py
 
-      - name: Recupera o arquivo resources.txt
+      - name: Executar estima-recursos.py
+        run: python estima-recursos.py
+
+      - name: Recupera o arquivo resources_cost.txt
         id: read-resources
-        run: echo "::set-output name=resources::$(cat resources.txt)" 
+        run: echo "::set-output name=resources::$(cat resources_cost.txt)" 
         
       - name: Cria Issue
         uses: actions/github-script@v4
@@ -34,7 +47,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const resources = fs.readFileSync('resources.txt', 'utf8').trim().split('\n');
+            const resources = fs.readFileSync('resources_cost.txt', 'utf8').trim().split('\n');
             const body = `
               Lista recursos de Infra
             
