@@ -19,7 +19,9 @@ jobs:
           python-version: '3.x'
 
       - name: Instalar dependencias
-        run: pip install ruamel.yaml
+        run: >
+          pip install ruamel.yaml
+          pip install boto3
 
         
       - name: Executar listar-recursos.py
