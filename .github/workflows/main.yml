@@ -19,14 +19,14 @@ jobs:
           python-version: '3.x'
 
       - name: Instalar dependencias
-        run: >
-          pip install ruamel.yaml
-          pip install boto3
-
-        
+        run: pip install ruamel.yaml
+          
       - name: Executar listar-recursos.py
         run: python listar-recursos.py
 
+      - name: Instalar dependencias
+        run: pip install boto3
+        
       - name: Executar estima-recursos.py
         env:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
